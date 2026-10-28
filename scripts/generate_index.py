@@ -66,6 +66,15 @@ def parse_problem(path: Path, match: re.Match) -> dict:
             if lang and lang not in langs:
                 langs.append(lang)
 
+    review_count = 0
+    last_review = ""
+    reviews_dir = path / "reviews"
+    if reviews_dir.is_dir():
+        review_files = sorted(reviews_dir.glob("*.md"))
+        review_count = len(review_files)
+        if review_files:
+            last_review = max(f.stem[:10] for f in review_files)
+
     return {
         "number": number,
         "slug": slug,
@@ -73,6 +82,8 @@ def parse_problem(path: Path, match: re.Match) -> dict:
         "difficulty": difficulty,
         "tags": tags,
         "langs": langs,
+        "review_count": review_count,
+        "last_review": last_review,
         "rel": path.relative_to(ROOT),
     }
 
@@ -92,12 +103,20 @@ def find_problems() -> list[dict]:
     return problems
 
 
+def render_review_cell(p: dict) -> str:
+    if not p["review_count"]:
+        return "-"
+    if p["last_review"]:
+        return f"{p['review_count']} 次（最近 {p['last_review']}）"
+    return f"{p['review_count']} 次"
+
+
 def render_problem_index(problems: list[dict]) -> str:
     if not problems:
         return "_还没有题目。运行 `python scripts/new_problem.py ...` 创建第一道题。_"
     lines = [
-        "| 题号 | 题目 | 难度 | 标签 | 语言 |",
-        "| --- | --- | --- | --- | --- |",
+        "| 题号 | 题目 | 难度 | 标签 | 语言 | 复习 |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for p in problems:
         num = f"{p['number']:04d}"
@@ -105,7 +124,9 @@ def render_problem_index(problems: list[dict]) -> str:
         tags = ", ".join(p["tags"]) if p["tags"] else "-"
         langs = ", ".join(p["langs"]) if p["langs"] else "-"
         diff = p["difficulty"] or "-"
-        lines.append(f"| {link} | {p['title']} | {diff} | {tags} | {langs} |")
+        lines.append(
+            f"| {link} | {p['title']} | {diff} | {tags} | {langs} | {render_review_cell(p)} |"
+        )
     return "\n".join(lines)
 
 
@@ -140,15 +161,17 @@ def write_tag_pages(tag_map: dict[str, dict]) -> None:
             "",
             f"共 {len(entry['problems'])} 题。",
             "",
-            "| 题号 | 题目 | 难度 | 语言 |",
-            "| --- | --- | --- | --- |",
+            "| 题号 | 题目 | 难度 | 语言 | 复习 |",
+            "| --- | --- | --- | --- | --- |",
         ]
         for p in entry["problems"]:
             num = f"{p['number']:04d}"
             link = f"[{num}](../{p['rel'].as_posix()}/)"
             langs = ", ".join(p["langs"]) if p["langs"] else "-"
             diff = p["difficulty"] or "-"
-            lines.append(f"| {link} | {p['title']} | {diff} | {langs} |")
+            lines.append(
+                f"| {link} | {p['title']} | {diff} | {langs} | {render_review_cell(p)} |"
+            )
         (index_dir / f"{slug}.md").write_text(
             "\n".join(lines) + "\n", encoding="utf-8"
         )

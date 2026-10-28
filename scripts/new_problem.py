@@ -97,7 +97,8 @@ def main() -> None:
     print("下一步：")
     print(f"  1. 编辑 {rel}/README.md")
     print(f"  2. 编辑 {rel}/solution.py")
-    print("  3. 运行 python scripts/generate_index.py 更新索引")
+    print(f"  3. 运行 python scripts/generate_index.py 更新索引")
+    print(f"  4. 复习时运行 python scripts/new_review.py {args.number}")
 
 
 if __name__ == "__main__":
